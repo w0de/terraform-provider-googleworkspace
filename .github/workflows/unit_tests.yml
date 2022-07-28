@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        
+
       - name: Set up Go
         uses: actions/setup-go@v2.1.5
         with:
@@ -27,5 +27,4 @@ jobs:
 
       - name: Run unit tests
         run:
-          export GOOGLEWORKSPACE_CREDENTIALS=$(echo -n ${{ steps.vault.outputs.private_key_data }} | base64 --decode)
           make test
