@@ -564,11 +564,6 @@ func flattenChromePolicies(ctx context.Context, policiesObj []*chromepolicy.Goog
 		}
 
 		schemaFieldMap := map[string]*chromepolicy.Proto2FieldDescriptorProto{}
-
-		// schemaFieldMap = {
-		// 	"details": {def},
-		// 	"smdpAddress": {def}
-		// }
 		for _, schemaField := range schemaDef.Definition.MessageType {
 			for i, schemaNestedField := range schemaField.Field {
 				schemaFieldMap[schemaNestedField.Name] = schemaField.Field[i]
