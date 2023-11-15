@@ -263,7 +263,7 @@ resource "googleworkspace_chrome_policy" "test" {
 `, ouName, enabled, pattern)
 }
 
-func testAccResourceChromePolicy_multipleValues(ouName string, enabled bool, policyMode string) string {
+func testAccResourceChromePolicy_multipleValueTypes(ouName string, enabled bool, policyMode string) string {
 	return fmt.Sprintf(`
 resource "googleworkspace_org_unit" "test" {
   name = "%s"
