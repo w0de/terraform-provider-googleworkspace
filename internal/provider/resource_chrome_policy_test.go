@@ -170,7 +170,7 @@ func TestAccResourceChromePolicy_multiple(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccResourceChromePolicy_multipleValues(ouName, true, "POLICY_MODE_RECOMMENDED"),
+				Config: testAccResourceChromePolicy_multipleValueTypes(ouName, true, "POLICY_MODE_RECOMMENDED"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("googleworkspace_chrome_policy.test", "policies.#", "1"),
 					resource.TestCheckResourceAttr("googleworkspace_chrome_policy.test", "policies.0.schema_name", "chrome.users.DomainReliabilityAllowed"),
