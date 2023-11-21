@@ -55,6 +55,30 @@ func TestAccResourceChromePolicy_typeMessage(t *testing.T) {
 	})
 }
 
+func TestAccResourceChromePolicy_additionalTargetKey(t *testing.T) {
+	t.Parallel()
+
+	ouName := fmt.Sprintf("tf-test-%s", acctest.RandString(10))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceChromePolicy_additionalTargetKey(ouName, "chrome:glnpjglilkicbckjpbgcfkogebgllemb", "ALLOWED"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("googleworkspace_chrome_policy.test", "policies.#", "1"),
+					resource.TestCheckResourceAttr("googleworkspace_chrome_policy.test", "policies.0.schema_name", "chrome.users.apps.InstallType"),
+					resource.TestCheckResourceAttr("googleworkspace_chrome_policy.test", "policies.0.schema_values.appInstallType", encode("ALLOWED")),
+					resource.TestCheckResourceAttr("googleworkspace_chrome_policy.test", "additional_target_keys.#", "1"),
+					resource.TestCheckResourceAttr("googleworkspace_chrome_policy.test", "additional_target_keys.0.target_key", "app_id"),
+					resource.TestCheckResourceAttr("googleworkspace_chrome_policy.test", "additional_target_keys.0.target_value", "chrome:glnpjglilkicbckjpbgcfkogebgllemb"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceChromePolicy_update(t *testing.T) {
 	t.Parallel()
 
@@ -197,7 +221,7 @@ resource "googleworkspace_org_unit" "test" {
 
 resource "googleworkspace_chrome_policy" "test" {
   org_unit_id = googleworkspace_org_unit.test.id
-  policies {
+  policies {  
     schema_name = "chrome.users.RestrictSigninToPattern"
     schema_values = {
       restrictSigninToPattern = jsonencode("%s")
@@ -319,4 +343,27 @@ resource "googleworkspace_chrome_policy" "test" {
   }
 }
 `, ouName)
+}
+
+func testAccResourceChromePolicy_additionalTargetKey(ouName string, app_id string, install_type string) string {
+	return fmt.Sprintf(`
+resource "googleworkspace_org_unit" "test" {
+  name = "%s"
+  parent_org_unit_path = "/"
+}
+
+resource "googleworkspace_chrome_policy" "test" {
+org_unit_id = googleworkspace_org_unit.test.id
+  additional_target_keys {
+    target_key = "app_id"
+	  target_value = "%s"
+	}
+  policies {
+    schema_name = "chrome.users.apps.InstallType"
+    schema_values = {
+	  appInstallType = jsonencode("%s")
+    }
+  }
+}
+`, ouName, app_id, install_type)
 }
