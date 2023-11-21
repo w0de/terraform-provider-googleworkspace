@@ -19,8 +19,7 @@ import (
 func resourceChromePolicy() *schema.Resource {
 	return &schema.Resource{
 		Description: "Chrome Policy resource in the Terraform Googleworkspace provider. " +
-			"Currently only supports policies not requiring additionalTargetKeys. Chrome Policy Schema " +
-			"resides under the `https://www.googleapis.com/auth/chrome.management.policy` client scope.",
+			"Chrome Policy Schema resides under the `https://www.googleapis.com/auth/chrome.management.policy` client scope.",
 
 		CreateContext: resourceChromePolicyCreate,
 		UpdateContext: resourceChromePolicyUpdate,
@@ -106,16 +105,7 @@ func resourceChromePolicyCreate(ctx context.Context, d *schema.ResourceData, met
 	}
 
 	if _, ok := d.GetOk("additional_target_keys"); ok {
-		additionalTargetKeys := map[string]string{}
-		additionalTargetKeyDefs := d.Get("additional_target_keys").([]interface{})
-		for _, k := range additionalTargetKeyDefs {
-			targetKeyDef := k.(map[string]interface{})
-			targetKeyName := targetKeyDef["target_key"].(string)
-			targetKeyValue := targetKeyDef["target_value"].(string)
-			additionalTargetKeys[targetKeyName] = targetKeyValue
-		}
-
-		policyTargetKey.AdditionalTargetKeys = additionalTargetKeys
+		policyTargetKey.AdditionalTargetKeys = expandChromePoliciesAdditionalTargetKeys(d.Get("additional_target_keys").([]interface{}))
 	}
 
 	diags = validateChromePolicies(ctx, d, client)
@@ -180,16 +170,7 @@ func resourceChromePolicyUpdate(ctx context.Context, d *schema.ResourceData, met
 	}
 
 	if _, ok := d.GetOk("additional_target_keys"); ok {
-		additionalTargetKeys := map[string]string{}
-		additionalTargetKeyDefs := d.Get("additional_target_keys").([]interface{})
-		for _, k := range additionalTargetKeyDefs {
-			targetKeyDef := k.(map[string]interface{})
-			targetKeyName := targetKeyDef["target_key"].(string)
-			targetKeyValue := targetKeyDef["target_value"].(string)
-			additionalTargetKeys[targetKeyName] = targetKeyValue
-		}
-
-		policyTargetKey.AdditionalTargetKeys = additionalTargetKeys
+		policyTargetKey.AdditionalTargetKeys = expandChromePoliciesAdditionalTargetKeys(d.Get("additional_target_keys").([]interface{}))
 	}
 
 	// Update is achieved by inheriting defaults for the previous policySchemas, and then applying the new set
@@ -246,16 +227,7 @@ func resourceChromePolicyRead(ctx context.Context, d *schema.ResourceData, meta 
 	}
 
 	if _, ok := d.GetOk("additional_target_keys"); ok {
-		additionalTargetKeys := map[string]string{}
-		additionalTargetKeyDefs := d.Get("additional_target_keys").([]interface{})
-		for _, k := range additionalTargetKeyDefs {
-			targetKeyDef := k.(map[string]interface{})
-			targetKeyName := targetKeyDef["target_key"].(string)
-			targetKeyValue := targetKeyDef["target_value"].(string)
-			additionalTargetKeys[targetKeyName] = targetKeyValue
-		}
-
-		policyTargetKey.AdditionalTargetKeys = additionalTargetKeys
+		policyTargetKey.AdditionalTargetKeys = expandChromePoliciesAdditionalTargetKeys(d.Get("additional_target_keys").([]interface{}))
 	}
 
 	policiesObj := []*chromepolicy.GoogleChromePolicyV1PolicyValue{}
@@ -321,16 +293,7 @@ func resourceChromePolicyDelete(ctx context.Context, d *schema.ResourceData, met
 	}
 
 	if _, ok := d.GetOk("additional_target_keys"); ok {
-		additionalTargetKeys := map[string]string{}
-		additionalTargetKeyDefs := d.Get("additional_target_keys").([]interface{})
-		for _, k := range additionalTargetKeyDefs {
-			targetKeyDef := k.(map[string]interface{})
-			targetKeyName := targetKeyDef["target_key"].(string)
-			targetKeyValue := targetKeyDef["target_value"].(string)
-			additionalTargetKeys[targetKeyName] = targetKeyValue
-		}
-
-		policyTargetKey.AdditionalTargetKeys = additionalTargetKeys
+		policyTargetKey.AdditionalTargetKeys = expandChromePoliciesAdditionalTargetKeys(d.Get("additional_target_keys").([]interface{}))
 	}
 
 	var requests []*chromepolicy.GoogleChromePolicyV1InheritOrgUnitPolicyRequest
@@ -469,10 +432,8 @@ func validateChromePolicies(ctx context.Context, d *schema.ResourceData, client 
 				additionalTargetKeyNames[targetKeyName.Key] = targetKeyName.KeyDescription
 			}
 
-			additionalTargetKeys := d.Get("additional_target_keys").([]interface{})
-			for _, k := range additionalTargetKeys {
-				additionalTargetKey := k.(map[string]interface{})
-				additionalTargetKeyName := additionalTargetKey["target_key"].(string)
+			additionalTargetKeys := expandChromePoliciesAdditionalTargetKeys(d.Get("additional_target_keys").([]interface{}))
+			for additionalTargetKeyName := range additionalTargetKeys {
 				if _, ok := additionalTargetKeyNames[additionalTargetKeyName]; !ok {
 					return append(diags, diag.Diagnostic{
 						Summary:  fmt.Sprintf("additional target key name (%s) is not found in this schema definition (%s)", additionalTargetKeyName, schemaName),
@@ -631,6 +592,19 @@ func expandChromePoliciesValues(policies []interface{}) ([]*chromepolicy.GoogleC
 	}
 
 	return result, diags
+}
+
+func expandChromePoliciesAdditionalTargetKeys(keys []interface{}) map[string]string {
+	result := map[string]string{}
+
+	for _, k := range keys {
+		targetKeyDef := k.(map[string]interface{})
+		targetKeyName := targetKeyDef["target_key"].(string)
+		targetKeyValue := targetKeyDef["target_value"].(string)
+		result[targetKeyName] = targetKeyValue
+	}
+
+	return result
 }
 
 func flattenChromePolicies(ctx context.Context, policiesObj []*chromepolicy.GoogleChromePolicyV1PolicyValue, client *apiClient) ([]map[string]interface{}, diag.Diagnostics) {
