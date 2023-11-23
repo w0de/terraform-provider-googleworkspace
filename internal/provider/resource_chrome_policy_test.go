@@ -221,7 +221,7 @@ resource "googleworkspace_org_unit" "test" {
 
 resource "googleworkspace_chrome_policy" "test" {
   org_unit_id = googleworkspace_org_unit.test.id
-  policies {  
+  policies {
     schema_name = "chrome.users.RestrictSigninToPattern"
     schema_values = {
       restrictSigninToPattern = jsonencode("%s")
