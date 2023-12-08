@@ -9,6 +9,8 @@ import (
 	"google.golang.org/api/googleapi"
 	"io/ioutil"
 	"log"
+	"math"
+	"math/rand"
 	"net/http"
 	"net/http/httputil"
 	"time"
@@ -47,8 +49,6 @@ func (t *retryTransport) RoundTrip(req *http.Request) (resp *http.Response, resp
 	}
 
 	attempts := 0
-	backoff := time.Millisecond * 500
-	nextBackoff := time.Millisecond * 500
 
 	// VCR depends on the original request body being consumed, so
 	// consume here. Since this won't affect the request itself,
@@ -77,6 +77,10 @@ Retry:
 		resp, respErr = t.internal.RoundTrip(newRequest)
 		attempts++
 
+		// Exponential backoff: 1s * attempts + 1ms * rand(2^attempts)
+		jitter := time.Duration(rand.Int63n(int64(math.Pow(2, float64(attempts))))) * time.Millisecond
+		backoff := time.Duration(attempts)*1000*time.Millisecond + jitter
+
 		retryErr := t.checkForRetryableError(resp, respErr)
 		if retryErr == nil {
 			log.Printf("[DEBUG] Retry Transport: Stopping retries, last request was successful")
@@ -94,11 +98,6 @@ Retry:
 			break Retry
 		case <-time.After(backoff):
 			log.Printf("[DEBUG] Retry Transport: Finished waiting %s before next retry", backoff)
-
-			// Fibonnaci backoff - 0.5, 1, 1.5, 2.5, 4, 6.5, 10.5, ...
-			lastBackoff := backoff
-			backoff = backoff + nextBackoff
-			nextBackoff = lastBackoff
 			continue
 		}
 	}
