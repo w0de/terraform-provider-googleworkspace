@@ -26,6 +26,11 @@ func resourceChromePolicy() *schema.Resource {
 		ReadContext:   resourceChromePolicyRead,
 		DeleteContext: resourceChromePolicyDelete,
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"org_unit_id": {
 				Description:      "The target org unit on which this policy is applied.",
@@ -135,7 +140,7 @@ func resourceChromePolicyCreate(ctx context.Context, d *schema.ResourceData, met
 		})
 	}
 
-	err := retryTimeDuration(ctx, time.Minute, func() error {
+	err := retryTimeDuration(ctx, d.Timeout(schema.TimeoutCreate), func() error {
 		_, retryErr := chromePoliciesService.Orgunits.BatchModify(fmt.Sprintf("customers/%s", client.Customer), &chromepolicy.GoogleChromePolicyV1BatchModifyOrgUnitPoliciesRequest{Requests: requests}).Do()
 		return retryErr
 	})
@@ -187,7 +192,7 @@ func resourceChromePolicyUpdate(ctx context.Context, d *schema.ResourceData, met
 		})
 	}
 
-	err := retryTimeDuration(ctx, time.Minute, func() error {
+	err := retryTimeDuration(ctx, d.Timeout(schema.TimeoutUpdate), func() error {
 		_, retryErr := chromePoliciesService.Orgunits.BatchInherit(fmt.Sprintf("customers/%s", client.Customer), &chromepolicy.GoogleChromePolicyV1BatchInheritOrgUnitPoliciesRequest{Requests: requests}).Do()
 		return retryErr
 	})

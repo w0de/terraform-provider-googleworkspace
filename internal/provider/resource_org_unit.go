@@ -8,6 +8,7 @@ import (
 	directory "google.golang.org/api/admin/directory/v1"
 	"google.golang.org/api/googleapi"
 	"log"
+	"time"
 )
 
 func resourceOrgUnit() *schema.Resource {
@@ -20,6 +21,11 @@ func resourceOrgUnit() *schema.Resource {
 		ReadContext:   resourceOrgUnitRead,
 		UpdateContext: resourceOrgUnitUpdate,
 		DeleteContext: resourceOrgUnitDelete,
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+		},
 
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
