@@ -77,9 +77,14 @@ Retry:
 		resp, respErr = t.internal.RoundTrip(newRequest)
 		attempts++
 
-		// Exponential backoff: 1s * attempts + 1ms * rand(2^attempts)
-		jitter := time.Duration(rand.Int63n(int64(math.Pow(2, float64(attempts))))) * time.Millisecond
-		backoff := time.Duration(attempts)*1000*time.Millisecond + jitter
+		// Exponential backoff - ~1s, 1.1s, 2.5s, 15s,
+		base := float64(10)
+		baseBackoff := time.Duration(math.Pow(base, float64(3))) * time.Millisecond
+		exponent := int64(math.Pow(base, float64(attempts)))
+		exponentBackoff := time.Duration(exponent) * time.Millisecond
+		jitter := rand.Int63n(exponent)
+		jitterBackoff := time.Duration(jitter) * time.Millisecond
+		backoff := baseBackoff + exponentBackoff + jitterBackoff
 
 		retryErr := t.checkForRetryableError(resp, respErr)
 		if retryErr == nil {
